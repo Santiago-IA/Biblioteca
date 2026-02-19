@@ -261,7 +261,7 @@ imprimirHeader("Gestión de Libros");
                         <td><?= htmlspecialchars($libro['titulo']) ?></td>
                         <td><?= htmlspecialchars($libro['autor']) ?></td>
                         <td><?= htmlspecialchars($libro['editorial']) ?></td>
-                        <td><?= htmlspecialchars($libro['anio'] ?? '-') ?></td>
+                        <td><?= htmlspecialchars((string)($libro['anio'] ?? '-')) ?></td>
                         <td><?= htmlspecialchars((string)$libro['total_ejemplares']) ?></td>
                         <td><?= htmlspecialchars((string)($libro['disponibles'] ?? 0)) ?></td>
                         <td>
