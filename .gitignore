@@ -1,0 +1,19 @@
+# PHP
+*.log
+*.cache
+/vendor/
+composer.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Configuración local (si hay)
+config.local.php
