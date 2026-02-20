@@ -1,255 +1,323 @@
 # Sistema Monolítico de Biblioteca Online
 
-Sistema web completo para la gestión de una biblioteca, desarrollado en PHP 8+ con PostgreSQL. Permite gestionar libros, usuarios y préstamos de manera eficiente y segura.
+Sistema web para la gestión de una biblioteca: libros, usuarios y préstamos. Desarrollado en PHP 8+ con PostgreSQL.
 
-## 📋 Características
-
-- **Gestión de Libros**: CRUD completo con búsqueda avanzada
-- **Gestión de Usuarios**: Administración de usuarios con roles (admin, bibliotecario, lector)
-- **Gestión de Préstamos**: Control de préstamos con validación de disponibilidad
-- **Interfaz Intuitiva**: Diseño limpio y responsive
-- **Seguridad**: Prepared statements y sanitización de datos
-- **Validaciones**: Control de reglas de negocio y validación de datos
-
-## 🛠️ Requisitos
-
-- PHP 8.0 o superior
-- PostgreSQL 12 o superior
-- Servidor web (Apache/Nginx) con PHP habilitado
-- Extensiones PHP requeridas:
-  - `pdo`
-  - `pdo_pgsql`
-
-## 📦 Instalación
-
-### 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/Santiago-IA/Biblioteca.git
-cd Biblioteca
-```
-
-### 2. Configurar la base de datos
-
-Asegúrate de tener PostgreSQL instalado y ejecuta el script SQL `db_biblioteca.sql` para crear las tablas necesarias:
-
-```sql
--- Ejemplo de estructura (ajustar según tu esquema)
-CREATE DATABASE db_biblioteca;
-
--- Tablas: usuarios, libros, prestamos
--- Vista: vw_libros_disponibilidad
-```
-
-### 3. Configurar conexión
-
-El archivo `conexion.php` ya está configurado con las siguientes credenciales:
-
-```php
-$DB_HOST = "127.0.0.1";
-$DB_PORT = "5432";
-$DB_NAME = "db_biblioteca";
-$DB_USER = "postgres";
-$DB_PASS = "2002";
-```
-
-Si necesitas cambiar estas credenciales, edita el archivo `conexion.php`.
-
-### 4. Configurar servidor web
-
-Coloca los archivos en el directorio de tu servidor web (por ejemplo, `htdocs` en XAMPP o `/var/www/html` en Linux).
-
-## 📁 Estructura de Archivos
-
-```
-biblioteca_online/
-├── index.php          # Página principal con resumen
-├── libros.php         # Gestión de libros (CRUD)
-├── usuarios.php       # Gestión de usuarios (CRUD)
-├── prestamos.php      # Gestión de préstamos
-├── conexion.php       # Configuración de conexión PDO
-├── estilos.css        # Estilos CSS del sistema
-└── README.md          # Este archivo
-```
-
-## 🗄️ Estructura de Base de Datos
-
-### Tablas Principales
-
-#### `usuarios`
-- `id` (PK)
-- `documento`
-- `nombre`
-- `email`
-- `rol` (admin, bibliotecario, lector)
-- `fecha_creacion`
-
-#### `libros`
-- `id` (PK)
-- `isbn`
-- `titulo`
-- `autor`
-- `editorial`
-- `anio`
-- `total_ejemplares`
-
-#### `prestamos`
-- `id` (PK)
-- `usuario_id` (FK)
-- `libro_id` (FK)
-- `fecha_prestamo`
-- `fecha_vencimiento`
-- `fecha_devolucion`
-- `observacion`
-
-#### Vista `vw_libros_disponibilidad`
-- Calcula los ejemplares disponibles restando los préstamos activos del total de ejemplares
-- Campo `disponibles`: `total_ejemplares - COUNT(prestamos activos)`
-
-## 🚀 Funcionalidades
-
-### Página Principal (`index.php`)
-
-- **Resumen del sistema**: Muestra contadores de:
-  - Total de libros
-  - Total de usuarios
-  - Préstamos activos
-- **Navegación rápida**: Acceso directo a cada módulo
-
-### Gestión de Libros (`libros.php`)
-
-- **Listado**: Muestra todos los libros con información completa
-- **Búsqueda**: Buscar por título, autor o ISBN (búsqueda case-insensitive)
-- **Crear libro**: Formulario para agregar nuevos libros
-- **Editar libro**: Modificar información de libros existentes
-- **Eliminar libro**: Con validación (no permite eliminar si tiene préstamos asociados)
-- **Validaciones**:
-  - Campos requeridos: ISBN, Título, Autor, Editorial, Total Ejemplares
-  - Año: Debe ser numérico positivo o vacío
-  - Total Ejemplares: Debe ser >= 0
-
-### Gestión de Usuarios (`usuarios.php`)
-
-- **Listado**: Muestra todos los usuarios del sistema
-- **Búsqueda**: Buscar por nombre, documento o email
-- **Crear usuario**: Formulario para registrar nuevos usuarios
-- **Editar usuario**: Modificar datos de usuarios existentes
-- **Eliminar usuario**: Con validación (no permite eliminar si tiene préstamos)
-- **Roles disponibles**:
-  - `admin`: Administrador del sistema
-  - `bibliotecario`: Personal de biblioteca
-  - `lector`: Usuario final
-- **Validaciones**:
-  - Campos requeridos: Documento, Nombre, Rol
-  - Email: Debe ser válido si se proporciona
-
-### Gestión de Préstamos (`prestamos.php`)
-
-#### Crear Préstamo
-
-- **Selección de usuario**: Dropdown con formato "documento - nombre"
-- **Selección de libro**: Dropdown mostrando "título - autor (Disponibles: X)"
-- **Días de préstamo**: Campo numérico (default: 7 días)
-- **Observación**: Campo opcional para notas
-- **Validación automática**: No permite crear préstamo si `disponibles <= 0`
-- **Cálculo de vencimiento**: `fecha_vencimiento = CURRENT_DATE + días`
-
-#### Listado de Préstamos
-
-- **Filtros por estado**:
-  - Todos
-  - Activos (fecha_devolucion IS NULL)
-  - Vencidos (CURRENT_DATE > fecha_vencimiento AND fecha_devolucion IS NULL)
-  - Devueltos (fecha_devolucion IS NOT NULL)
-- **Información mostrada**:
-  - ID del préstamo
-  - Usuario (documento - nombre)
-  - Libro (título - autor)
-  - Fecha de préstamo
-  - Fecha de vencimiento
-  - Estado de devolución
-  - Estado del préstamo (ACTIVO/VENCIDO/DEVUELTO)
-- **Acción de devolución**: Botón "Devolver" solo visible para préstamos activos o vencidos
-- **Orden**: Por fecha de préstamo descendente (más recientes primero)
-
-## 🔒 Seguridad
-
-- **Prepared Statements**: Todas las consultas SQL usan prepared statements para prevenir inyección SQL
-- **Sanitización HTML**: Todas las salidas usan `htmlspecialchars()` para prevenir XSS
-- **Validación de datos**: Validaciones tanto en cliente como en servidor
-- **Manejo de errores**: Mensajes de error genéricos que no exponen información sensible
-
-## 🎨 Interfaz
-
-- **Diseño responsive**: Se adapta a diferentes tamaños de pantalla
-- **Navegación intuitiva**: Menú superior en todas las páginas
-- **Mensajes de estado**: Alertas visuales para éxito y errores
-- **Tablas organizadas**: Información clara y fácil de leer
-- **Estados visuales**: Colores diferenciados para estados de préstamos
-
-## 📝 Reglas de Negocio
-
-1. **Disponibilidad de libros**: Un préstamo solo se puede crear si hay ejemplares disponibles (`disponibles > 0`)
-2. **Préstamos activos**: Un préstamo está activo cuando `fecha_devolucion IS NULL`
-3. **Préstamos vencidos**: Un préstamo está vencido cuando `CURRENT_DATE > fecha_vencimiento AND fecha_devolucion IS NULL`
-4. **Devolución**: Al devolver un libro, se actualiza `fecha_devolucion` con `CURRENT_DATE`
-5. **Eliminación protegida**: No se pueden eliminar libros o usuarios que tengan préstamos asociados
-
-## 🔧 Configuración Técnica
-
-### PHP
-
-- **Versión mínima**: PHP 8.0
-- **Modo estricto**: `declare(strict_types=1)` en todos los archivos
-- **PDO Configuration**:
-  - `ATTR_ERRMODE`: `EXCEPTION`
-  - `ATTR_DEFAULT_FETCH_MODE`: `ASSOC`
-  - `ATTR_EMULATE_PREPARES`: `false`
-
-### Base de Datos
-
-- **Motor**: PostgreSQL
-- **Conexión**: PDO con driver `pgsql`
-- **Consultas**: Todas usan prepared statements
-- **Búsquedas**: Usan `ILIKE` para búsquedas case-insensitive
-
-## 📖 Uso del Sistema
-
-1. **Acceder al sistema**: Abre `index.php` en tu navegador
-2. **Gestionar libros**: Ve a "Libros" para agregar, editar o eliminar libros
-3. **Gestionar usuarios**: Ve a "Usuarios" para administrar usuarios del sistema
-4. **Gestionar préstamos**: Ve a "Préstamos" para crear préstamos y gestionar devoluciones
-
-## 🐛 Solución de Problemas
-
-### Error de conexión a la base de datos
-
-- Verifica que PostgreSQL esté corriendo
-- Confirma las credenciales en `conexion.php`
-- Asegúrate de que la base de datos `db_biblioteca` exista
-
-### No se muestran libros disponibles
-
-- Verifica que la vista `vw_libros_disponibilidad` esté creada correctamente
-- Revisa que los préstamos activos estén correctamente registrados
-
-### No puedo eliminar un libro/usuario
-
-- Verifica que no tenga préstamos asociados
-- Si es necesario, primero devuelve todos los préstamos relacionados
-
-## 📄 Licencia
-
-Este proyecto es de código abierto y está disponible para uso educativo y comercial.
-
-## 👤 Autor
-
-Santiago-IA
-
-## 🔗 Repositorio
-
-https://github.com/Santiago-IA/Biblioteca.git
+Esta guía explica cómo desplegar el proyecto **en Mac (macOS)** paso a paso.
 
 ---
 
-**Nota**: Este sistema está diseñado como aplicación monolítica sin frameworks externos, ideal para aprendizaje y proyectos pequeños/medianos.
+## 📋 Contenido de esta guía
+
+1. [Requisitos previos](#-requisitos-previos)
+2. [Despliegue paso a paso](#-despliegue-paso-a-paso)
+3. [Verificar que todo funciona](#-verificar-que-todo-funciona)
+4. [Estructura del proyecto](#-estructura-del-proyecto)
+5. [Funcionalidades del sistema](#-funcionalidades-del-sistema)
+6. [Solución de problemas](#-solución-de-problemas)
+
+---
+
+## 🛠️ Requisitos previos
+
+Antes de empezar necesitas:
+
+| Requisito | Versión mínima | Para qué sirve |
+|-----------|----------------|-----------------|
+| **PHP**   | 8.0            | Ejecutar la aplicación |
+| **PostgreSQL** | 12  | Base de datos |
+| **Extensiones PHP** | `pdo` y `pdo_pgsql` | Conectar PHP con PostgreSQL |
+
+Si no tienes nada instalado, sigue la guía desde el Paso 1. Si ya tienes PHP y PostgreSQL en tu Mac, ve directo al [Paso 4](#paso-4-crear-la-base-de-datos).
+
+---
+
+## 🚀 Despliegue paso a paso
+
+Sigue los pasos **en orden**. No te saltes ninguno.
+
+---
+
+### Paso 1: Instalar PostgreSQL en Mac
+
+1. Abre **Terminal** (Aplicaciones → Utilidades → Terminal, o Cmd+Espacio y escribe "Terminal").
+2. Si no tienes **Homebrew**, instálalo primero:
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+   Sigue las instrucciones en pantalla (te pedirá tu contraseña de Mac).
+3. Instala PostgreSQL:
+   ```bash
+   brew install postgresql@16
+   brew services start postgresql@16
+   ```
+   (Si prefieres otra versión, usa `postgresql@15` o solo `postgresql` para la última.)
+4. Añade PostgreSQL al PATH:
+   - **Mac con chip Apple (M1/M2/M3):** `/opt/homebrew/opt/postgresql@16/bin`
+   - **Mac con Intel:** `/usr/local/opt/postgresql@16/bin`
+   ```bash
+   echo 'export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+   En Intel cambia `/opt/homebrew` por `/usr/local`.
+5. Crea el usuario `postgres` con contraseña para que coincida con `conexion.php`:
+   ```bash
+   psql -d postgres -c "CREATE USER postgres WITH PASSWORD '2002' SUPERUSER CREATEDB CREATEROLE LOGIN;"
+   ```
+   Si sale "role postgres already exists", solo ponle la contraseña:
+   ```bash
+   psql -d postgres -c "ALTER USER postgres WITH PASSWORD '2002';"
+   ```
+6. Comprueba la conexión:
+   ```bash
+   psql -U postgres -h 127.0.0.1 -d postgres
+   ```
+   Introduce la contraseña `2002`. Si entras al prompt de `psql`, está bien. Escribe `\q` y Enter para salir.
+
+---
+
+### Paso 2: Instalar PHP en Mac
+
+1. Abre **Terminal**.
+2. Instala PHP con Homebrew (si no tienes Homebrew, instálalo en el Paso 1):
+   ```bash
+   brew install php
+   ```
+3. Comprueba la versión:
+   ```bash
+   php -v
+   ```
+   Debe ser 8.x. Si sale 7.x, instala la versión 8:
+   ```bash
+   brew install php@8.3
+   echo 'export PATH="/opt/homebrew/opt/php@8.3/bin:$PATH"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+   (En Intel usa `/usr/local/opt/php@8.3/bin`.)
+4. Comprueba que tengas la extensión para PostgreSQL:
+   ```bash
+   php -m | grep -i pdo_pgsql
+   ```
+   Si no sale nada, prueba: `pecl install pdo_pgsql` o `brew reinstall php`.
+
+---
+
+### Paso 3: Obtener el proyecto
+
+**Opción A: Con Git**
+
+1. Abre Terminal y ve a la carpeta donde quieras el proyecto, por ejemplo:
+   ```bash
+   cd ~/proyectos
+   ```
+   o `cd ~/Desktop` si lo quieres en el Escritorio.
+2. Clona el repositorio:
+   ```bash
+   git clone https://github.com/Santiago-IA/Biblioteca.git
+   cd Biblioteca
+   ```
+
+**Opción B: Sin Git**
+
+1. Entra en **https://github.com/Santiago-IA/Biblioteca**
+2. Pulsa **Code** → **Download ZIP**.
+3. Descomprime el ZIP donde quieras (por ejemplo `~/Desktop/Biblioteca` o `~/proyectos/Biblioteca`).
+
+Al final debes tener una carpeta `Biblioteca` con estos archivos dentro:
+
+- `index.php`, `libros.php`, `usuarios.php`, `prestamos.php`
+- `conexion.php`, `estilos.css`, `db_biblioteca.sql`
+
+---
+
+### Paso 4: Crear la base de datos
+
+1. **Crear la base de datos** en PostgreSQL. En Terminal:
+   ```bash
+   psql -U postgres -h 127.0.0.1 -c "CREATE DATABASE db_biblioteca;"
+   ```
+   (Te pedirá la contraseña del usuario `postgres`: `2002`.)
+
+   **Alternativa con interfaz gráfica:** Instala pgAdmin desde **https://www.pgadmin.org/download/** (versión Mac). Abre pgAdmin, conéctate al servidor (contraseña `postgres`), clic derecho en **Databases** → **Create** → **Database...**, nombre: `db_biblioteca`, **Save**.
+
+2. **Ejecutar el script SQL** que crea tablas y vista. Sustituye la ruta por la de tu carpeta del proyecto:
+   ```bash
+   psql -U postgres -h 127.0.0.1 -d db_biblioteca -f "$HOME/proyectos/Biblioteca/db_biblioteca.sql"
+   ```
+   Ejemplo si está en el Escritorio: `-f "$HOME/Desktop/Biblioteca/db_biblioteca.sql"`
+
+   **Con pgAdmin:** Clic derecho en `db_biblioteca` → **Query Tool** → **File** → **Open** → selecciona `db_biblioteca.sql` → **Execute** (▶).
+
+3. **Comprobar:** En pgAdmin, en `db_biblioteca` → **Schemas** → **public** → **Tables** deberías ver: `usuarios`, `libros`, `prestamos`. En **Views**: `vw_libros_disponibilidad`.
+
+---
+
+### Paso 5: Configurar la conexión
+
+1. Abre el archivo **`conexion.php`** del proyecto con un editor de texto.
+2. Comprueba que coincidan estas líneas (por defecto ya están así):
+   ```php
+   $DB_HOST = "127.0.0.1";
+   $DB_PORT = "5432";
+   $DB_NAME = "db_biblioteca";
+   $DB_USER = "postgres";
+   $DB_PASS = "2002";
+   ```
+3. Si en el Paso 1 pusiste otra contraseña para `postgres`, edita `$DB_PASS`.
+4. Guarda el archivo.
+
+---
+
+### Paso 6: Levantar la aplicación
+
+1. Abre **Terminal**.
+2. Entra en la carpeta del proyecto, por ejemplo:
+   ```bash
+   cd ~/proyectos/Biblioteca
+   ```
+   (o `cd ~/Desktop/Biblioteca` según donde lo tengas.)
+3. Arranca el servidor de PHP:
+   ```bash
+   php -S 127.0.0.1:8000
+   ```
+4. Debe aparecer: `Development Server (http://127.0.0.1:8000) started`.
+5. **No cierres esta ventana** mientras uses la aplicación. Para parar el servidor: **Ctrl+C**.
+
+**Alternativa con MAMP:** Si usas MAMP (https://www.mamp.info/), copia la carpeta del proyecto en `Applications/MAMP/htdocs/`. Inicia los servidores en MAMP y abre `http://localhost:8888/Biblioteca/` (o el puerto que muestre MAMP). Recuerda tener PostgreSQL instalado y configurado aparte (Paso 1) y habilitar `pdo_pgsql` en el `php.ini` de MAMP.
+
+---
+
+### Paso 7: Abrir la aplicación en el navegador
+
+1. Abre Safari, Chrome o el navegador que uses.
+2. En la barra de direcciones escribe: **http://127.0.0.1:8000**
+3. Pulsa Enter.
+
+**Qué deberías ver:**
+
+- Página con título **"Biblioteca Online"**.
+- Tres tarjetas: Gestión de Libros, Gestión de Usuarios, Préstamos.
+- Un resumen con tres números: Total Libros, Total Usuarios, Préstamos Activos (al principio pueden ser 0).
+
+**Si ves "Error de conexión a la base de datos":**
+
+- Revisa el [Paso 5](#paso-5-configurar-la-conexión) (usuario, contraseña, nombre de base).
+- Comprueba que PostgreSQL esté en marcha: en Terminal `brew services list` y que `postgresql@16` esté "started". Si no: `brew services start postgresql@16`.
+
+---
+
+### Paso 8: Datos iniciales (primera vez)
+
+Para poder hacer préstamos necesitas al menos **un usuario** y **un libro**.
+
+1. En el menú superior, haz clic en **Usuarios**.
+2. Rellena el formulario "Nuevo Usuario":
+   - Documento: por ejemplo `12345678`
+   - Nombre: tu nombre o "Admin"
+   - Email: opcional
+   - Rol: **Admin** (o Bibliotecario/Lector)
+3. Pulsa **Crear**.
+
+4. En el menú, haz clic en **Libros**.
+5. Rellena el formulario "Nuevo Libro":
+   - ISBN: por ejemplo `978000000001`
+   - Título: por ejemplo "Mi primer libro"
+   - Autor, Editorial: lo que quieras
+   - Año: opcional
+   - Total Ejemplares: por ejemplo **2**
+6. Pulsa **Crear**.
+
+7. Ve a **Préstamos**, elige el usuario y el libro, deja 7 días y pulsa **Crear Préstamo**. Debe mostrarse "Préstamo creado correctamente."
+
+Con esto el despliegue está completo.
+
+---
+
+## ✅ Verificar que todo funciona
+
+| Prueba | Dónde | Qué hacer |
+|--------|--------|-----------|
+| 1 | Inicio | Abres la URL y ves "Biblioteca Online" y los 3 contadores. |
+| 2 | Usuarios | Creas un usuario y aparece en la tabla. |
+| 3 | Libros | Creas un libro y aparece en la tabla con "Disponibles" correcto. |
+| 4 | Préstamos | Creas un préstamo y ves mensaje de éxito. |
+| 5 | Préstamos | En el listado aparece el préstamo como ACTIVO. |
+| 6 | Préstamos | Pulsas "Devolver" y el estado pasa a DEVUELTO. |
+| 7 | Libros | Buscas por título/autor y se filtra la lista. |
+
+Si todo eso funciona, el sistema está bien desplegado.
+
+---
+
+## 📁 Estructura del proyecto
+
+```
+Biblioteca/
+├── index.php          # Página principal (resumen y enlaces)
+├── libros.php         # CRUD de libros
+├── usuarios.php       # CRUD de usuarios
+├── prestamos.php      # Crear préstamos y listar (filtros y devolver)
+├── conexion.php       # Conexión PDO a PostgreSQL (editar credenciales aquí)
+├── estilos.css        # Estilos de la interfaz
+├── db_biblioteca.sql  # Script para crear tablas y vista (ejecutar una vez)
+└── README.md          # Esta guía
+```
+
+---
+
+## 🗄️ Base de datos (resumen)
+
+- **Base de datos:** `db_biblioteca`
+- **Tablas:** `usuarios`, `libros`, `prestamos`
+- **Vista:** `vw_libros_disponibilidad` (campo `disponibles`)
+
+Credenciales por defecto en `conexion.php`: host `127.0.0.1`, puerto `5432`, usuario `postgres`, contraseña `2002`.
+
+---
+
+## 📖 Funcionalidades del sistema
+
+- **Inicio:** Resumen (total libros, usuarios, préstamos activos) y enlaces a cada módulo.
+- **Libros:** Alta, edición, eliminación y búsqueda por título, autor o ISBN. Listado con total y disponibles.
+- **Usuarios:** Alta, edición, eliminación y búsqueda. Roles: admin, bibliotecario, lector.
+- **Préstamos:** Crear préstamo (usuario, libro, días, observación), listar con filtros (activos/vencidos/devueltos) y botón "Devolver". No permite crear préstamo si no hay ejemplares disponibles.
+
+---
+
+## 🐛 Solución de problemas (Mac)
+
+### "Error de conexión a la base de datos"
+
+- PostgreSQL en marcha: `brew services start postgresql@16`. Comprueba con `brew services list`.
+- Revisa `conexion.php`: usuario `postgres`, contraseña, nombre `db_biblioteca`, host y puerto.
+- La base de datos `db_biblioteca` existe (creada en el Paso 4).
+
+### "No se muestran libros" o "disponibles" raro
+
+- Ejecutaste todo el contenido de `db_biblioteca.sql` (tablas **y** vista `vw_libros_disponibilidad`).
+
+### No aparece la extensión pdo_pgsql
+
+- Con Homebrew, `php.ini` suele estar en `/opt/homebrew/etc/php/8.x/php.ini` (Apple Silicon) o `/usr/local/etc/php/8.x/php.ini` (Intel). Comprueba con `php --ini`.
+- Las líneas deben ser `extension=pdo_pgsql` y `extension=pgsql` (sin `;` al inicio).
+- Cierra la terminal donde corre `php -S` y vuelve a ejecutar `php -S 127.0.0.1:8000`.
+
+### No puedo eliminar un libro o usuario
+
+- Solo se pueden eliminar si no tienen préstamos asociados. Primero devuelve esos préstamos en "Préstamos".
+
+### La página en blanco o error 500
+
+- Revisa que todos los archivos del proyecto estén en la misma carpeta y que `conexion.php` no tenga errores de sintaxis.
+- Revisa el mensaje de error en la terminal donde corre `php -S` o en los logs.
+
+---
+
+## 📄 Licencia y repositorio
+
+- Proyecto de código abierto para uso educativo y comercial.
+- Repositorio: **https://github.com/Santiago-IA/Biblioteca.git**
+- Autor: Santiago-IA
+
+---
+
+**Resumen rápido (Mac):** Instalar Homebrew → PostgreSQL (`brew install postgresql@16`) → PHP (`brew install php`) → Clonar/descargar proyecto → Crear base `db_biblioteca` y ejecutar `db_biblioteca.sql` → Ajustar `conexion.php` si hace falta → `cd` a la carpeta del proyecto y `php -S 127.0.0.1:8000` → Abrir http://127.0.0.1:8000 y crear un usuario y un libro para usar préstamos.
