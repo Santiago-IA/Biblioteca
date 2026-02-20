@@ -75,18 +75,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['crear_prestamo'])) {
             $stmt_disponibilidad->execute(['id' => $libro_id]);
             $libro_info = $stmt_disponibilidad->fetch();
             
-            if (!$libro_info || $libro_info['disponibles'] <= 0) {
+            if (!$libro_info || (int)$libro_info['disponibles'] <= 0) {
                 $mensaje = "No hay ejemplares disponibles de este libro.";
                 $tipo_mensaje = 'error';
             } else {
                 $observacion_valor = !empty($observacion) ? $observacion : null;
-                
-                // Insertar préstamo con fecha_vencimiento calculada
-                $stmt = $pdo->prepare("INSERT INTO prestamos (usuario_id, libro_id, fecha_prestamo, fecha_vencimiento, observacion) VALUES (:usuario_id, :libro_id, CURRENT_DATE, CURRENT_DATE + :dias, :observacion)");
+                $fecha_vencimiento = date('Y-m-d', strtotime("+{$dias_prestamo} days"));
+
+                // Insertar préstamo con fecha_vencimiento calculada en PHP
+                $stmt = $pdo->prepare("INSERT INTO prestamos (usuario_id, libro_id, fecha_prestamo, fecha_vencimiento, observacion) VALUES (:usuario_id, :libro_id, CURRENT_DATE, :fecha_vencimiento, :observacion)");
                 $stmt->execute([
                     'usuario_id' => $usuario_id,
                     'libro_id' => $libro_id,
-                    'dias' => $dias_prestamo,
+                    'fecha_vencimiento' => $fecha_vencimiento,
                     'observacion' => $observacion_valor
                 ]);
                 $mensaje = "Préstamo creado correctamente.";
