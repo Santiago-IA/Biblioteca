@@ -27,7 +27,7 @@ function imprimirHeader(string $titulo = "Biblioteca Online"): void {
 function imprimirFooter(): void {
     echo "    </main>
     <footer>
-        <p>&copy; " . date('Y') . " Biblioteca Online. Todos los derechos reservados.</p>
+        <p>&copy; " . date('Y') . " Biblioteca de Andres. Todos los derechos reservados.</p>
     </footer>
 </body>
 </html>";
